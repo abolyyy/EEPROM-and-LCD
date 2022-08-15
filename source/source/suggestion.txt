@@ -1,0 +1,22 @@
+﻿for xml file:	
+	
+	/*
+	tempArray[a]=Key_Scan();
+	while(35!=tempArray[a]){
+		
+		if ((tempArray[a])!= 42){
+			lcdGotoXY(a,1);
+			rprintf("%d",tempArray[a]);
+			while (!Key_Released());
+			_delay_ms(200);
+			lcdGotoXY(a,1);
+			rprintf("*");
+			a++;
+		}
+		else if(tempArray[a]==42) {
+			a--;
+			lcdGotoXY(a,1);
+			rprintf(" ");
+			
+		}
+	}*/	
