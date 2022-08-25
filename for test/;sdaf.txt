@@ -1,0 +1,13 @@
+string menuItemStr[]={" "," "," "," "};
+int cursurLine;
+bool enter;
+bool keyEntered;
+
+switch(KEYSCAN()){
+	CASE 8:	curserLine = 0; keyEntered=1; BREAK;
+
+	CASE 2: curserLine = 1; keyEntered=1; BREAK;
+
+	CASE 5: enter=1; keyEntered=1; BREAK;
+
+}
