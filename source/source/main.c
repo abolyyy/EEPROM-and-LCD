@@ -17,16 +17,15 @@
 //#define F_CPU 1000000
 
 uint8_t tempLength=8;
-uint8_t TempPW[8]={1,1,1,1,1,1,1,1};
+uint8_t TempPW[8];
 	
 #define passwordLength 8
-uint8_t password[8]={1,1,1,1,1,1,1,1};
+uint8_t EEMEM password_EEPROM[8]={2,2,2,2,2,2,2,2};
+uint8_t password[8];
+
 	
 #define menuItemNum 4
-	
-#define SEL_arrow   0
-#define UP_arrow    1
-#define DOWN_arrow  2
+
 
 // Returns true if arr1[0..n-1] and arr2[0..m-1]
 // contain same elements.
@@ -39,9 +38,9 @@ uint8_t comparePW(uint8_t arr1[], uint8_t arr2[], uint8_t m, uint8_t n)
 	
 	// Linearly compare elements
 	for (int i = 0; i < 8; i++){
-	if (arr1[i] != arr2[i]){
-	return 0;
-	}
+		if (arr1[i] != arr2[i]){
+			return 0;
+		}
 	}
 	
 	// If all elements were same.
@@ -54,7 +53,6 @@ void showPW(uint8_t array[]){
 		lcdGotoXY(i,1);
 		rprintf("%d",array[i]);
 	}
-
 }
 
 uint8_t getPW(const char textShowUp[16], uint8_t tempArray[])
@@ -77,6 +75,12 @@ uint8_t getPW(const char textShowUp[16], uint8_t tempArray[])
 			return a;
 			}
 			if (geta==42) {
+				for (uint8_t i;Key_Scan()==42 && i<100 ;i++)
+				{
+					_delay_ms(10);
+					if (i==99) return;
+						
+				}
 				a--;
 				lcdGotoXY(a,1);
 				rprintf(" ");
@@ -93,7 +97,6 @@ uint8_t getPW(const char textShowUp[16], uint8_t tempArray[])
 			a++;
 		}
 	} 
-	
 }
 
 void login(){
@@ -165,8 +168,6 @@ int main(void)
 	lcdInit();
 	rprintfInit(lcdDataWrite);
 //\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
-
-	//login();]
 	unsigned char Character1[8] = { 0x10, 0x18, 0x1c, 0x1e, 0x1c, 0x18, 0x10, 0x00 };  /* Custom char set for alphanumeric LCD Module */
 	unsigned char Character2[8] = { 0x04, 0x0E, 0x1F, 0x00, 0x00, 0x00, 0x00, 0x00 };
 	unsigned char Character3[8] = { 0x00, 0x00, 0x00, 0x00, 0x1F, 0x0E, 0x04, 0x00 };
@@ -175,12 +176,22 @@ int main(void)
 	LCD_Custom_Char(1, Character2);  /* Build Character2 at position 1 */
 	LCD_Custom_Char(2, Character3);  /* Build Character3 at position 2 */
 //	----------------------------------------------------------------------
-	char menuItemStr[menuItemNum][16]={{"Change PW"},{"Beep Status"},{"WIFI Connection"},{"Progress"}};
+	char menuItemStr[menuItemNum][16]={{"Change PW"},{"Beep Status"},{"Show Current PW"},{"Log out"}};
 	int cursurLine;
 	uint8_t enter=0;
 	uint8_t keyEntered=1;
 	uint8_t index;
-
+	uint8_t PW[8]={1,1,1,1,1,1,1,1};
+	
+	//eeprom_update_block((uint8_t*)PW,(const uint8_t*)password_EEPROM,8);
+	eeprom_read_block  ((uint8_t*)password,(const uint8_t*)password_EEPROM,8);
+	
+	showPW(password);
+	_delay_ms(2000);
+	
+	login();
+	sbi(DDRA,3);
+	sbi(PORTA,3);
 	
 	while (1)
 	{
@@ -207,7 +218,7 @@ int main(void)
 					}
 					break;
 				
-			case 5: 
+			case 35: 
 				enter=1; 
 				keyEntered=1; 
 				while (!Key_Released()); 
@@ -232,8 +243,13 @@ int main(void)
 		if (enter==1){
 			switch(cursurLine+index){
 				case 0:
+					getPW("enter new PW",password);
+					eeprom_update_block((uint8_t*)password,(const uint8_t*)password_EEPROM,8);
 					lcdClear();
-					rprintfStr("this is 0");
+					lcdGotoXY(0,0);
+					rprintfStr("your new PW is :");
+					showPW(password);
+					_delay_ms(3000);
 				break;
 				
 				case 1:
@@ -243,15 +259,22 @@ int main(void)
 				
 				case 2:
 					lcdClear();
-					rprintfStr("WIFI is wrong");
-					_delay_ms(2000);
-					lcdClear();
+					lcdGotoXY(0,0);
+					rprintfStr("Current PW is:");
+					eeprom_update_block((uint8_t*)password,(const uint8_t*)password_EEPROM,8);
+					lcdGotoXY(0,1);
+					showPW(password);
+					while(!(Key_Scan()==42));
 				break;
 				
 				case 3:
-					lcdClear();
-					rprintfStr("this is 3");
-					break;
+					cbi(PORTA,3);
+					login();
+					sbi(PORTA,3);
+					index=0;
+					cursurLine=0;
+				break;
+					
 				}
 				enter=0;
 				keyEntered=1;
@@ -259,46 +282,4 @@ int main(void)
 
 	}
 	
-/*
-	int index;
-	lcdClear();
-	lcdGotoXY(0,0);
-	rprintfChar(0);
-	while(1){
-		
-		lcdGotoXY(1,0);
-		rprintfStr("Change PW");
-		lcdGotoXY(1,1);
-		rprintfStr("BEEP Status");
-		
-		switch(Key_Scan()){
-			
-			case 5:
-				if (index==0) getPW("enter new PW",password);
-				if (index==1) CHB();
-				
-				lcdClear();
-			break;
-			
-			case 2:
-				lcdGotoXY(0,1);
-				rprintfChar(' ');
-				lcdGotoXY(0,0);
-				rprintfChar(0);
-				index=0;
-			break;
-			
-			case 8:
-				lcdGotoXY(0,1);
-				rprintfChar(0);
-				lcdGotoXY(0,0);
-				rprintfChar(' ');
-				index=1;
-			break;
-		}
-		
-		
-		
-	}
-*/
 }
